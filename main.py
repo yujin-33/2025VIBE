@@ -1,67 +1,81 @@
 import streamlit as st
-import random
+import datetime
 
-st.set_page_config(page_title="오늘 점심 뭐 먹지?", page_icon="🍱")
+st.set_page_config(page_title="사주 봐주는 앱", page_icon="🔮")
+st.title("🔮 나의 사주 카드")
 
-st.title("🍽️ 오늘 점심 뭐 먹지?")
-st.write("점심 메뉴 선택이 고민될 때, 한 번 눌러보세요!")
+birth_date = st.date_input("생년월일을 선택하세요", min_value=datetime.date(1900, 1, 1), max_value=datetime.date.today())
+gender = st.radio("성별", ["남성", "여성"])
 
-# 기본 메뉴
-default_menus = {
-    "한식": ["비빔밥", "김치찌개", "된장찌개", "불고기", "삼겹살", "순두부찌개", "국밥"],
-    "중식": ["짜장면", "짬뽕", "탕수육", "마파두부", "볶음밥"],
-    "일식": ["초밥", "라멘", "돈부리", "가츠동", "우동"],
-    "양식": ["파스타", "피자", "햄버거", "스테이크", "샐러드"],
-    "기타": ["분식", "도시락", "샌드위치", "컵밥", "편의점"]
+# 간지 및 오행/음양 정보
+ten_gan = ["갑", "을", "병", "정", "무", "기", "경", "신", "임", "계"]
+twelve_ji = ["자", "축", "인", "묘", "진", "사", "오", "미", "신", "유", "술", "해"]
+zodiac_animals = ["쥐", "소", "호랑이", "토끼", "용", "뱀", "말", "양", "원숭이", "닭", "개", "돼지"]
+five_elements = {
+    "갑": "목", "을": "목", "병": "화", "정": "화",
+    "무": "토", "기": "토", "경": "금", "신": "금",
+    "임": "수", "계": "수"
+}
+yin_yang = {
+    "갑": "양", "을": "음", "병": "양", "정": "음",
+    "무": "양", "기": "음", "경": "양", "신": "음",
+    "임": "양", "계": "음"
 }
 
-# 세션 상태 초기화
-if "menus" not in st.session_state:
-    st.session_state.menus = default_menus.copy()
+def get_ganji(year):
+    gan = ten_gan[(year - 4) % 10]
+    ji = twelve_ji[(year - 4) % 12]
+    return gan + ji, gan, ji
 
-if "excluded" not in st.session_state:
-    st.session_state.excluded = []
+def get_zodiac(year):
+    return zodiac_animals[(year - 4) % 12]
 
-# 카테고리 선택
-selected_categories = st.multiselect(
-    "🍱 먹고 싶은 카테고리를 선택하세요", options=list(st.session_state.menus.keys()),
-    default=list(st.session_state.menus.keys())
-)
+def get_day_ganji(date):
+    days_since_base = (date - datetime.date(1900, 1, 1)).days
+    gan = ten_gan[(days_since_base + 10) % 10]
+    ji = twelve_ji[(days_since_base + 12) % 12]
+    return gan + ji, gan, ji
 
-# 제외할 메뉴 선택
-all_menus = [menu for cat in selected_categories for menu in st.session_state.menus[cat]]
-excluded_menus = st.multiselect("❌ 제외할 메뉴가 있다면 선택하세요", options=all_menus)
+# 결과 출력
+if st.button("🔍 나의 사주카드 보기"):
+    year = birth_date.year
+    month = birth_date.month
+    day = birth_date.day
 
-# 메뉴 추천
-if st.button("✅ 메뉴 추천받기"):
-    candidate_menus = [menu for cat in selected_categories for menu in st.session_state.menus[cat]
-                       if menu not in excluded_menus]
-    if candidate_menus:
-        choice = random.choice(candidate_menus)
-        st.success(f"오늘의 추천 메뉴는... **{choice}** 입니다! 😋")
-    else:
-        st.warning("선택된 메뉴가 없어요. 카테고리나 제외 목록을 다시 확인해 주세요.")
+    year_ganji, y_gan, y_ji = get_ganji(year)
+    zodiac = get_zodiac(year)
+    day_ganji, d_gan, d_ji = get_day_ganji(birth_date)
+    element = five_elements.get(d_gan, "알 수 없음")
+    yin_or_yang = yin_yang.get(d_gan, "알 수 없음")
 
-# 메뉴 직접 추가
-with st.expander("➕ 직접 메뉴 추가하기"):
-    new_menu = st.text_input("추가할 메뉴 이름")
-    new_category = st.selectbox("카테고리 선택", options=list(st.session_state.menus.keys()))
-    if st.button("메뉴 추가"):
-        if new_menu:
-            st.session_state.menus[new_category].append(new_menu)
-            st.success(f"{new_category}에 '{new_menu}' 메뉴를 추가했어요!")
-        else:
-            st.warning("메뉴 이름을 입력해 주세요.")
+    # 카드 스타일 HTML로 예쁘게 표현
+    card_html = f"""
+    <div style='
+        background: linear-gradient(to right, #fdfbfb, #ebedee);
+        padding: 2rem;
+        border-radius: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        max-width: 500px;
+        margin: 0 auto;
+        font-family: "Nanum Gothic", sans-serif;
+        text-align: center;
+        line-height: 1.6;
+    '>
+        <h2 style='margin-bottom: 0.3em;'>🔮 나의 사주 카드 🔮</h2>
+        <hr style='margin-bottom: 1em;' />
+        <h3>🧑 성별: {gender}</h3>
+        <h3>📅 생년월일: {year}년 {month}월 {day}일</h3>
+        <h3>🐾 띠: {zodiac}띠 ({y_ji})</h3>
+        <h3>📜 연간지: {year_ganji}</h3>
+        <h3>🗓️ 일간지: {day_ganji}</h3>
+        <h3>☯️ 음양: {yin_or_yang}</h3>
+        <h3>🌟 오행 기운: {element}</h3>
+        <hr />
+        <p style='font-size: 0.95rem; color: #444;'>⚠️ 이 결과는 참고용입니다. 정확한 해석은 전문가에게 문의하세요.</p>
+    </div>
+    """
 
-# 현재 메뉴 확인
-with st.expander("📋 현재 등록된 메뉴 보기"):
-    for cat, items in st.session_state.menus.items():
-        st.markdown(f"**{cat}**: {', '.join(items)}")
+    st.markdown(card_html, unsafe_allow_html=True)
 
-# 공유용 텍스트 생성
-if st.button("📋 결과 복사용 텍스트 생성"):
-    if 'choice' in locals():
-        st.code(f"오늘 점심은 {choice} 어때요?")
-    else:
-        st.info("먼저 메뉴 추천을 받아주세요.")
+
 
